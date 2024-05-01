@@ -1,5 +1,7 @@
 // Variables to store filtered results
 let filteredResults = [];
+let currentPage = 1;
+const resultsPerPage = 50; // Adjust this value as needed
 
 // Helper function to fetch data from a URI
 async function fetchData(uri) {
@@ -33,7 +35,7 @@ async function processPart1() {
 
     // Filter and sort combined objects based on the specified criteria
     const filteredObjects = Object.values(combinedObjects)
-        .filter(obj => obj.last_update_date && obj.schedule_name === 'OTC')
+        .filter(obj => obj.last_update_date && obj.schedule_name === 'OTC' && obj.class_name === 'Human')
         .sort((a, b) => new Date(b.last_update_date) - new Date(a.last_update_date));
 
     return filteredObjects;
@@ -69,29 +71,6 @@ async function processPart2() {
     return combinedIngredients;
 }
 
-// Main function to execute both parts and populate the table
-async function main() {
-    try {
-        const part1Results = await processPart1();
-        const part2Results = await processPart2();
-
-        // Combine results from part1 and part2 based on drug_code
-        const combinedResults = part1Results.map(obj => ({
-            ...obj,
-            ...part2Results[obj.drug_code]
-        }));
-
-        filteredResults = combinedResults; // Store in global variable for filtering
-
-        // Display results in a table
-        displayTable(filteredResults);
-
-    } catch (error) {
-        console.error('Error:', error);
-        displayError();
-    }
-}
-
 // Function to display the table with data
 function displayTable(data) {
     const tableContainer = document.getElementById('table-container');
@@ -123,6 +102,25 @@ function displayTable(data) {
     });
 
     tableContainer.appendChild(table);
+
+    // Add pagination buttons
+    const paginationContainer = document.createElement('div');
+    paginationContainer.classList.add('pagination');
+
+    const previousButton = document.createElement('button');
+    previousButton.textContent = 'Previous';
+    previousButton.addEventListener('click', previousPage);
+    paginationContainer.appendChild(previousButton);
+
+    const nextPageButton = document.createElement('button');
+    nextPageButton.textContent = 'Next';
+    nextPageButton.addEventListener('click', nextPage);
+    paginationContainer.appendChild(nextPageButton);
+
+    tableContainer.appendChild(paginationContainer);
+
+    // Display paginated results
+    displayPaginatedResults(filteredResults, currentPage);
 }
 
 // Function to display error message
@@ -151,6 +149,54 @@ function resetFilters() {
 
     filteredResults = filteredResults; // Reset to original data
     displayTable(filteredResults);
+}
+
+// Function to display paginated data
+function displayPaginatedResults(data, page) {
+    const startIndex = (page - 1) * resultsPerPage;
+    const endIndex = startIndex + resultsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
+    displayTable(paginatedData);
+}
+
+// Function to handle "previous" button click
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        displayPaginatedResults(filteredResults, currentPage);
+    }
+}
+
+// Function to handle "next" button click
+function nextPage() {
+    const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        displayPaginatedResults(filteredResults, currentPage);
+    }
+}
+
+// Main function to execute both parts and populate the table
+async function main() {
+    try {
+        const part1Results = await processPart1();
+        const part2Results = await processPart2();
+
+        // Combine results from part1 and part2 based on drug_code
+        const combinedResults = part1Results.map(obj => ({
+            ...obj,
+            ...part2Results[obj.drug_code]
+        }));
+
+        filteredResults = combinedResults; // Store in global variable for filtering
+
+        // Display results in a table
+        displayTable(filteredResults);
+
+    } catch (error) {
+        console.error('Error:', error);
+        displayError();
+    }
 }
 
 // Run the main function when the page is loaded
