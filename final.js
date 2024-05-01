@@ -84,6 +84,7 @@ function displayTable(data) {
     displayPaginationControls(data.length);
 }
 
+
 // Function to display pagination controls
 function displayPaginationControls(totalResults) {
     const totalPages = Math.ceil(totalResults / resultsPerPage);
