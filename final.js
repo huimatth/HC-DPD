@@ -81,8 +81,14 @@ function displayPaginatedResults(data, page) {
 
 // Function to update pagination controls
 function updatePaginationControls() {
-    // Clear previous pagination controls
+    // Find the pagination container
     const paginationContainer = document.querySelector('.pagination');
+    if (!paginationContainer) {
+        console.error('Pagination container not found.');
+        return;
+    }
+
+    // Clear previous pagination controls
     paginationContainer.innerHTML = '';
 
     // Create "Previous" button
