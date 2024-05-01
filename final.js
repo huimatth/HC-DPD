@@ -1,7 +1,7 @@
 // Variables to store filtered results
 let filteredResults = [];
 let currentPage = 1;
-const resultsPerPage = 50; // Adjust this value as needed
+const resultsPerPage = 100; // Adjust this value as needed
 
 // Helper function to fetch data from a URI
 async function fetchData(uri) {
