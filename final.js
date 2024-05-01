@@ -1,7 +1,7 @@
 // Variables to store filtered results
 let filteredResults = [];
 let currentPage = 1;
-const resultsPerPage = 100; // Adjust this value as needed
+const resultsPerPage = 10; // Adjust this value as needed
 
 // Helper function to fetch data from a URI
 async function fetchData(uri) {
@@ -71,6 +71,52 @@ async function processPart2() {
     return combinedIngredients;
 }
 
+// Function to display paginated data
+function displayPaginatedResults(data, page) {
+    const startIndex = (page - 1) * resultsPerPage;
+    const endIndex = startIndex + resultsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
+    return paginatedData;
+}
+
+// Function to update pagination controls
+function updatePaginationControls() {
+    // Clear previous pagination controls
+    const paginationContainer = document.querySelector('.pagination');
+    paginationContainer.innerHTML = '';
+
+    // Create "Previous" button
+    const previousButton = document.createElement('button');
+    previousButton.textContent = 'Previous';
+    previousButton.addEventListener('click', previousPage);
+    paginationContainer.appendChild(previousButton);
+
+    // Create "Next" button
+    const nextPageButton = document.createElement('button');
+    nextPageButton.textContent = 'Next';
+    nextPageButton.addEventListener('click', nextPage);
+    paginationContainer.appendChild(nextPageButton);
+}
+
+// Function to handle "previous" button click
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        const paginatedData = displayPaginatedResults(filteredResults, currentPage);
+        displayTable(paginatedData);
+    }
+}
+
+// Function to handle "next" button click
+function nextPage() {
+    const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        const paginatedData = displayPaginatedResults(filteredResults, currentPage);
+        displayTable(paginatedData);
+    }
+}
+
 // Function to display the table with data
 function displayTable(data) {
     const tableContainer = document.getElementById('table-container');
@@ -103,77 +149,14 @@ function displayTable(data) {
 
     tableContainer.appendChild(table);
 
-    // Add pagination buttons
-    const paginationContainer = document.createElement('div');
-    paginationContainer.classList.add('pagination');
-
-    const previousButton = document.createElement('button');
-    previousButton.textContent = 'Previous';
-    previousButton.addEventListener('click', previousPage);
-    paginationContainer.appendChild(previousButton);
-
-    const nextPageButton = document.createElement('button');
-    nextPageButton.textContent = 'Next';
-    nextPageButton.addEventListener('click', nextPage);
-    paginationContainer.appendChild(nextPageButton);
-
-    tableContainer.appendChild(paginationContainer);
-
-    // Display paginated results
-    displayPaginatedResults(filteredResults, currentPage);
+    // Update pagination controls
+    updatePaginationControls();
 }
 
 // Function to display error message
 function displayError() {
     const tableContainer = document.getElementById('table-container');
     tableContainer.textContent = 'Error fetching or processing data.';
-}
-
-// Function to apply filters
-function applyFilters() {
-    const companyFilter = document.getElementById('companyFilter').value.trim().toLowerCase();
-    const ingredientFilter = document.getElementById('ingredientFilter').value.trim().toLowerCase();
-
-    filteredResults = filteredResults.filter(obj =>
-        obj.company_name.toLowerCase().includes(companyFilter) &&
-        obj.ingredient_name.toLowerCase().includes(ingredientFilter)
-    );
-
-    displayTable(filteredResults);
-}
-
-// Function to reset filters and display the original data
-function resetFilters() {
-    document.getElementById('companyFilter').value = '';
-    document.getElementById('ingredientFilter').value = '';
-
-    filteredResults = filteredResults; // Reset to original data
-    displayTable(filteredResults);
-}
-
-// Function to display paginated data
-function displayPaginatedResults(data, page) {
-    const startIndex = (page - 1) * resultsPerPage;
-    const endIndex = startIndex + resultsPerPage;
-    const paginatedData = data.slice(startIndex, endIndex);
-    displayTable(paginatedData);
-}
-
-// Function to handle "previous" button click
-function previousPage() {
-    if (currentPage > 1) {
-        currentPage--;
-        displayPaginatedResults(filteredResults, currentPage);
-    }
-}
-
-// Function to handle "next" button click
-function nextPage() {
-    const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
-    if (currentPage < totalPages) {
-        currentPage++;
-        displayPaginatedResults(filteredResults, currentPage);
-    }
 }
 
 // Main function to execute both parts and populate the table
@@ -191,7 +174,8 @@ async function main() {
         filteredResults = combinedResults; // Store in global variable for filtering
 
         // Display results in a table
-        displayTable(filteredResults);
+        const paginatedData = displayPaginatedResults(filteredResults, currentPage);
+        displayTable(paginatedData);
 
     } catch (error) {
         console.error('Error:', error);
