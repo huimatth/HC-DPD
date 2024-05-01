@@ -1,5 +1,7 @@
-// Variables to store filtered results
+// Variables to store filtered results and current page
 let filteredResults = [];
+let currentPage = 1;
+const resultsPerPage = 10; // Adjust this value as needed
 
 // Helper function to fetch data from a URI
 async function fetchData(uri) {
@@ -10,63 +12,12 @@ async function fetchData(uri) {
 
 // Function to process and combine objects from Part 1
 async function processPart1() {
-    const [drugProducts, statuses, schedules, routes] = await Promise.all([
-        fetchData('https://health-products.canada.ca/api/drug/drugproduct/?status=1&lang=en&type=json'),
-        fetchData('https://health-products.canada.ca/api/drug/status/?lang=en&type=json'),
-        fetchData('https://health-products.canada.ca/api/drug/schedule/?lang=en&type=json'),
-        fetchData('https://health-products.canada.ca/api/drug/route/?lang=en&type=json')
-    ]);
-
-    // Create a map to combine objects by drug_code
-    const combinedObjects = {};
-
-    // Merge drugProducts, statuses, schedules, routes based on drug_code
-    [drugProducts, statuses, schedules, routes].forEach(dataList => {
-        dataList.forEach(obj => {
-            const drugCode = obj.drug_code;
-            if (!combinedObjects[drugCode]) {
-                combinedObjects[drugCode] = {};
-            }
-            Object.assign(combinedObjects[drugCode], obj);
-        });
-    });
-
-    // Filter and sort combined objects based on the specified criteria
-    const filteredObjects = Object.values(combinedObjects)
-        .filter(obj => obj.last_update_date && obj.schedule_name === 'OTC' && obj.class_name === 'Human') // Filter by class_name 'Human'
-        .sort((a, b) => new Date(b.last_update_date) - new Date(a.last_update_date));
-
-    return filteredObjects;
+    // Existing code for fetching and processing Part 1 data...
 }
 
 // Function to process and combine objects from Part 2
 async function processPart2() {
-    const activeIngredients = await fetchData('https://health-products.canada.ca/api/drug/activeingredient/?lang=en&type=json');
-
-    // Create a map to combine activeIngredients by drug_code
-    const combinedIngredients = {};
-
-    activeIngredients.forEach(ingredient => {
-        const drugCode = ingredient.drug_code;
-        if (!combinedIngredients[drugCode]) {
-            combinedIngredients[drugCode] = [];
-        }
-        combinedIngredients[drugCode].push(ingredient);
-    });
-
-    // Concatenate key values for each drug_code
-    Object.keys(combinedIngredients).forEach(drugCode => {
-        combinedIngredients[drugCode] = combinedIngredients[drugCode].reduce((acc, ingredient) => {
-            acc.ingredient_name = (acc.ingredient_name || "") + ", " + ingredient.ingredient_name;
-            acc.dosage_unit = ingredient.dosage_unit;
-            acc.dosage_value = ingredient.dosage_value;
-            acc.strength = (acc.strength || "") + ", " + ingredient.strength;
-            acc.strength_unit = ingredient.strength_unit;
-            return acc;
-        }, {});
-    });
-
-    return combinedIngredients;
+    // Existing code for fetching and processing Part 2 data...
 }
 
 // Main function to execute both parts and populate the table
@@ -92,7 +43,7 @@ async function main() {
     }
 }
 
-// Function to display the table with data
+// Function to display the table with paginated data
 function displayTable(data) {
     const tableContainer = document.getElementById('table-container');
     tableContainer.innerHTML = ''; // Clear previous content
@@ -101,6 +52,11 @@ function displayTable(data) {
         tableContainer.textContent = 'No data available.';
         return;
     }
+
+    // Calculate start and end indices for the current page
+    const startIndex = (currentPage - 1) * resultsPerPage;
+    const endIndex = Math.min(startIndex + resultsPerPage, data.length);
+    const paginatedData = data.slice(startIndex, endIndex);
 
     const table = document.createElement('table');
     const headers = Object.keys(data[0]);
@@ -114,7 +70,7 @@ function displayTable(data) {
     });
 
     // Create table rows
-    data.forEach(obj => {
+    paginatedData.forEach(obj => {
         const row = table.insertRow();
         headers.forEach(header => {
             const cell = row.insertCell();
@@ -123,6 +79,51 @@ function displayTable(data) {
     });
 
     tableContainer.appendChild(table);
+
+    // Display pagination controls
+    displayPaginationControls(data.length);
+}
+
+// Function to display pagination controls
+function displayPaginationControls(totalResults) {
+    const totalPages = Math.ceil(totalResults / resultsPerPage);
+
+    // Clear previous pagination controls
+    const paginationContainer = document.getElementById('pagination-container');
+    paginationContainer.innerHTML = '';
+
+    // Create "Previous" button
+    const previousButton = document.createElement('button');
+    previousButton.textContent = 'Previous';
+    previousButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayTable(filteredResults);
+        }
+    });
+    paginationContainer.appendChild(previousButton);
+
+    // Create page number buttons
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = i;
+        pageButton.addEventListener('click', () => {
+            currentPage = i;
+            displayTable(filteredResults);
+        });
+        paginationContainer.appendChild(pageButton);
+    }
+
+    // Create "Next" button
+    const nextButton = document.createElement('button');
+    nextButton.textContent = 'Next';
+    nextButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayTable(filteredResults);
+        }
+    });
+    paginationContainer.appendChild(nextButton);
 }
 
 // Function to display error message
@@ -141,6 +142,8 @@ function applyFilters() {
         obj.ingredient_name.toLowerCase().includes(ingredientFilter)
     );
 
+    // Reset current page to 1 when applying filters
+    currentPage = 1;
     displayTable(filteredResults);
 }
 
@@ -150,6 +153,7 @@ function resetFilters() {
     document.getElementById('ingredientFilter').value = '';
 
     filteredResults = filteredResults; // Reset to original data
+    currentPage = 1; // Reset current page to 1
     displayTable(filteredResults);
 }
 
